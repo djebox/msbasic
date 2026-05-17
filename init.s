@@ -259,6 +259,12 @@ L40D7:
         cmp     #$A0
         beq     L40FA
 .endif
+.ifdef P6502
+; P6502: hard RAM top limit is $8000
+        lda     LINNUM+1
+        cmp     #$80
+        beq     L40FA
+.endif
 L40DD:
 .ifdef CONFIG_2
         lda     #$55 ; 01010101 / 10101010
