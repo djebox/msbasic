@@ -29,4 +29,7 @@
 .ifdef W65C816SXB
 .include "w65c816sxb_iscntc.s"
 .endif
+.ifdef P6502
+.include "p6502_iscntc.s"
+.endif
 ;!!! runs into "STOP"

@@ -31,3 +31,10 @@
 .ifdef SYM1
         jmp     PR_WRITTEN_BY
 .endif
+
+.ifdef P6502
+.setcpu "65C02" ; for phx, plx
+        jmp     COLD_START
+halt:
+        jmp halt
+.endif
