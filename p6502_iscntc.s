@@ -1,7 +1,11 @@
 .segment "CODE"
 
-; must be non blocking
 ISCNTC:
-;    clc ; clear carry flag (convention for no error)
-    sec ; set carry flag (convention for error)
+    jsr MONRDKEY_NB
+    bcc @no_data
+    cmp #$03
+    beq @is_ctnc
+@no_data:
     rts
+@is_ctnc:
+    ; Fall throughs
