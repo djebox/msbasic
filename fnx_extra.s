@@ -1,12 +1,20 @@
 .segment "EXTRA"
-.export MONCOUT, MONRDKEY, LOAD, SAVE
+.export MONCOUT, MONRDKEY
 
+MMIO_XSTACK := $FFEA
 MMIO_SPIN := $FFF0
 MMIO_A := $FFF3
 MMIO_OP := $FFF9
 
 OP_PUTCHAR := $8
 OP_GETCHAR := $9
+OP_OPEN := $a
+OP_WRITE := $b
+OP_CLOSE := $c
+
+O_WRONLY := $1
+O_CREAT := $40
+O_TRUNC := $200
 
 MONCOUT:
     pha
@@ -50,10 +58,4 @@ MONRDKEY:
 
     jsr MONCOUT     ; echo
 
-    rts
-
-LOAD:
-    rts
-
-SAVE:
     rts
