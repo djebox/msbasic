@@ -32,6 +32,6 @@
 .include "w65c816sxb_extra.s"
 .endif
 
-.ifdef P6502
-.include "p6502_extra.s"
+.ifdef FNX
+.include "fnx_extra.s"
 .endif

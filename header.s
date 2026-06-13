@@ -32,7 +32,7 @@
         jmp     PR_WRITTEN_BY
 .endif
 
-.ifdef P6502
+.ifdef FNX
 .setcpu "65C02" ; for phx, plx
         jmp     COLD_START
 halt:
