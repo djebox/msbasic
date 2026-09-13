@@ -4,6 +4,7 @@
 MMIO_XSTACK := $FFEA
 MMIO_SPIN := $FFF0
 MMIO_A := $FFF3
+MMIO_X := $FFF5
 MMIO_OP := $FFF9
 
 OP_PUTCHAR := $8
@@ -12,9 +13,9 @@ OP_OPEN := $a
 OP_WRITE := $b
 OP_CLOSE := $c
 
-O_WRONLY := $1
-O_CREAT := $40
-O_TRUNC := $200
+O_CREAT := $10
+O_WRONLY := $2
+O_TRUNC := $20
 
 MONCOUT:
     pha
@@ -41,13 +42,18 @@ MONRDKEY_NB:
     cpx #1
     bne @no_data
 
+    cmp #$0a
+    bne @not_lf
+    lda #$0d        ; force CR
+
+@not_lf:
     plx
-    sec ; set carry flag
+    sec             ; set carry flag
     rts
 
 @no_data:
     plx
-    clc ; clear carry flag
+    clc             ; clear carry flag
     rts
 
 MONRDKEY:
