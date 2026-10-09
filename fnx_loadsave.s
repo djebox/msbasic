@@ -33,12 +33,12 @@ SAVE:
         sta FILDES
 
         ; write
-        ;lda #0
-        ;sta COUNT
+        lda #0
+        sta COUNT
         jsr WRITE_PROG
 
         ; flush
-        ;jsr FLUSH
+        jsr FLUSH
 
         ; close
         lda FILDES
@@ -168,17 +168,33 @@ WRITE_END:
         rts
 
 WRITE_BYTE:
-        sta MMIO_XSTACK
+        ldx COUNT
+        sta BUFFER, x
 
-        ;inc COUNT
-        ;bne @done                               ; $ff -> 0
+        inc COUNT
+        lda COUNT
+        cmp #$ff
+        bne @done
 
-        ;jsr FLUSH
+        jsr FLUSH
 
 @done:
-        ;rts
+        rts
 
 FLUSH:
+        lda COUNT
+        beq @done
+
+        tax
+        dex
+@push:
+        lda BUFFER, x
+        sta MMIO_XSTACK
+
+        dex
+        cpx #$ff                                
+        bne @push                               ; 0 -> ff
+
         lda FILDES
         sta MMIO_A
         
@@ -186,9 +202,10 @@ FLUSH:
         sta MMIO_OP
         jsr MMIO_SPIN
 
-        ;lda #0
-        ;sta COUNT
-        
+        lda #0
+        sta COUNT
+
+@done:
         rts
 
 LOAD:
@@ -200,3 +217,5 @@ NXTLIG:
         .res 2
 COUNT:
         .res 1
+BUFFER:
+        .res 256
