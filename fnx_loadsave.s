@@ -14,7 +14,7 @@ SAVE:
 
 @push_loop:
         dey
-        lda (INDEX),y
+        lda (INDEX), y
         sta MMIO_XSTACK
         tya
         bne @push_loop
@@ -25,14 +25,22 @@ SAVE:
         ldx #>O_WRONLY | O_CREAT | O_TRUNC      ; MSB
         stx MMIO_X
     
+        ; open
         lda #OP_OPEN
         sta MMIO_OP
         jsr MMIO_SPIN
 
         sta FILDES
 
-        jsr WRITE
+        ; write
+        ;lda #0
+        ;sta COUNT
+        jsr WRITE_PROG
 
+        ; flush
+        ;jsr FLUSH
+
+        ; close
         lda FILDES
         sta MMIO_A
 
@@ -42,50 +50,43 @@ SAVE:
 
         rts
 
-WRITE:
+WRITE_PROG:
         lda TXTTAB
-        sta PRGPTR                              ; zp
-        lda TXTTAB+1
-        sta PRGPTR+1
+        sta LIGPTR                              ; zp
+        lda TXTTAB + 1
+        sta LIGPTR + 1
 
-DEBUG:
-        ;lda (PRGPTR),y
-        ;jsr WRITE_BYTE
-        ;iny
-        ;cpy #16
-        ;bne DEBUG
-        ;rts
-
-WRITE_LOOP:
-        ldy #0
-        lda (PRGPTR),y
-        sta LIGPTR
-
-        ldy #1
-        lda (PRGPTR),y
-        sta LIGPTR+1
-
-        lda LIGPTR
-        ora LIGPTR+1
-        beq WRITE_END
-
+WRITE_LINE:
         ; 0-1: next line pointer
         ; 2-3: line number
         ; 4+: BASIC tokens 
-        ldy #2
+
+        ldy #0
+
+        lda (LIGPTR), y
+        sta NXTLIG
+        iny
+
+        lda (LIGPTR), y
+        sta NXTLIG + 1
+        iny
+
+        lda NXTLIG
+        ora NXTLIG + 1
+        beq WRITE_END
 
         ; line number low
-        lda (PRGPTR),y
+        lda (LIGPTR), y
         jsr WRITE_BYTE
         iny
 
         ; line number high
-        lda (PRGPTR),y
+        lda (LIGPTR), y
         jsr WRITE_BYTE
         iny
 
-WRITE_LINE:
-        lda (PRGPTR),y
+WRITE_CHAR:
+        lda (LIGPTR), y
 
         cmp #$80
         bcs @token                              ; >= 0x80
@@ -95,85 +96,73 @@ WRITE_LINE:
 
         jsr WRITE_BYTE
         iny
-        jmp WRITE_LINE
+
+        jmp WRITE_CHAR
 
 @token:
         jsr WRITE_TOKEN
         iny
-        jmp WRITE_LINE
+
+        jmp WRITE_CHAR
 
 @eol:
         lda #$0d
         jsr WRITE_BYTE
         lda #$0a
         jsr WRITE_BYTE
+
         jmp WRITE_NEXT_LINE
 
 WRITE_TOKEN:
         sec
         sbc #$80
-        tax     ; if we call write_byte below
+        tax
 
         lda #<TOKEN_NAME_TABLE
         sta TOKPTR                              ; zp
         lda #>TOKEN_NAME_TABLE
-        sta TOKPTR+1
+        sta TOKPTR + 1
 
-        ;lda (TOKPTR)
-        ;jsr WRITE_BYTE
-
-        ;inc TOKPTR
-        ;lda (TOKPTR)
-        ;jsr WRITE_BYTE
-
-        ;inc TOKPTR
-        ;lda (TOKPTR)
-        ;jsr WRITE_BYTE
-
-        ;rts
-
-@find:
+@check_token:
         cpx #0
-        beq @write
+        beq @write_token
 
-@skip:
+@skip_token:
         lda (TOKPTR)
         inc TOKPTR
         bne :+                                  ; next anonym label
-        inc TOKPTR+1
-:
+        inc TOKPTR + 1
+:                                               ; anonym label
         and #$80
-        beq @skip
+        beq @skip_token
 
         dex
-        jmp @find
+        jmp @check_token
 
-@write:
-        ; TOKENPTR = début du token
-
-@char:
+@write_token:
         lda (TOKPTR)
 
         pha
-        and #$7f                        ; retirer le bit de terminaison
+        and #$7f                                ; retirer le bit de terminaison
         jsr WRITE_BYTE
         pla
-        bmi @done                       ; bit 7 était positionné
+        bmi @end_token                          ; bit 7 était positionné
 
         inc TOKPTR
-        bne @char
-        inc TOKPTR+1
-        jmp @char
+        bne @write_token
+        inc TOKPTR + 1
+        jmp @write_token
 
-@done:
+@end_token:
         rts
 
 WRITE_NEXT_LINE:
-        lda LIGPTR
-        sta PRGPTR
-        lda LIGPTR+1
-        sta PRGPTR+1
-        jmp WRITE_LOOP
+        lda NXTLIG
+        sta LIGPTR
+        lda NXTLIG + 1
+        sta LIGPTR + 1
+
+        jmp WRITE_LINE
 
 WRITE_END:
         rts
@@ -181,12 +170,24 @@ WRITE_END:
 WRITE_BYTE:
         sta MMIO_XSTACK
 
+        ;inc COUNT
+        ;bne @done                               ; $ff -> 0
+
+        ;jsr FLUSH
+
+@done:
+        ;rts
+
+FLUSH:
         lda FILDES
         sta MMIO_A
         
         lda #OP_WRITE
         sta MMIO_OP
         jsr MMIO_SPIN
+
+        ;lda #0
+        ;sta COUNT
         
         rts
 
@@ -195,5 +196,7 @@ LOAD:
 
 FILDES:
         .res 2
-LIGPTR:
+NXTLIG:
         .res 2
+COUNT:
+        .res 1
