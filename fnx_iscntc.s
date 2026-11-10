@@ -8,4 +8,4 @@ ISCNTC:
 @no_data:
     rts
 @is_ctnc:
-    ; Fall throughs
+    ; Fall through
